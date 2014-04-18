@@ -1,0 +1,30 @@
+# Synchronization options
+sync:
+    # Command line options to rsync
+    options:        -rpcL --delete
+
+    # File containing exclusion rules for rsync
+    exclude_file:   "rsync.exclude"
+
+    backup:         false
+    backup_folder:  ../rsync_backup/`date +%Y-%m-%d_%T`
+
+tasks:
+    # Synchronize the build dir to the remote environment
+    _sync.sync: |
+        rsync \
+            $(sync.options) $(sync.backup ? sprintf("--backup --backup-dir=%s",sync.backup_folder)) \
+                $(sync.exclude_file ? sprintf("--exclude-from=%s/%s", tasks.build, sync.exclude_file)) \
+                -v \
+            $(tasks.build)/ $(envs[target_env].ssh):$(envs[target_env].root) \
+        ;
+
+    # Synchronize the build dir to the remote environment
+    _sync.simulate: |
+        rsync \
+            --dry-run \
+            $(sync.options) $(sync.backup ? sprintf("--backup --backup-dir=%s",sync.backup_folder)) \
+                $(sync.exclude_file ? sprintf("--exclude-from=%s/%s", tasks.build, sync.exclude_file)) \
+                -v \
+            $(tasks.build)/ $(envs[target_env].ssh):$(envs[target_env].root) \
+        ;
