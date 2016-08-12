@@ -7,8 +7,8 @@
  */
 namespace Zicht\Tool\Plugin\Rsync;
 
-use \Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
-use \Zicht\Tool\Plugin as BasePlugin;
+use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
+use Zicht\Tool\Plugin as BasePlugin;
 
 /**
  * rsync plugin
@@ -27,6 +27,15 @@ class Plugin extends BasePlugin
             ->children()
                 ->arrayNode('sync')
                     ->children()
+                        ->scalarNode('mode')
+                            ->defaultValue('classic')
+                        ->end()
+                        ->scalarNode('deploymentPath')->end()
+                        ->scalarNode('publicPath')->end()
+                        ->scalarNode('keep')->end()
+                        ->arrayNode('shared')
+                            ->prototype('scalar')->end()
+                        ->end()
                         ->scalarNode('options')->end()
                         ->scalarNode('exclude_file')->end()
                         ->scalarNode('backup_folder')->end()
