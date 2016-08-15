@@ -15,116 +15,17 @@ sync:
 tasks:
     # Synchronize the build dir to the remote environment
     _sync.sync:
-        args: { simulate: ? false }
-        do:
-            - @_sync.symlink
-#            - @_sync.classic
-
-    #   Symlink deployment strategy
-    #   ===========================
-    #
-    #   To use this strategy you will have to provide the following arguments:
-    #        deploymentPath     Where the sync script will store releases/current and shared folders.
-    #                           Recommended ~/deployment
-    #        publicPath         Where the actual public path is where the webserver points at.
-    #                           Typically ~/public_html
-    #
-    #   Optionally:
-    #        shared             A list of folders / files that are shared across releases. Such as web/media.
-    #
-    #   In the end you will end up with the following structure (ideally).
-    #
-    #       ~/deployment/releases
-    #       ~/deployment/current   ---> symlink to current deployed release
-    #       ~/deployment/shared
-    #       ~/public_html          ---> symlink to ~/deployment/current
-    #
-    #   On deploy the following steps are taken:
-    #
-    #       - Check if required folders exists and make sure publicPath is a symlink to 'current'
-    #       - Create and sync to a release folder (this is a timestamp YYYYMMDDHMS)
-    #       - Relink 'current' to the latest release
-    #       - Relink 'publicPath' to 'current'
-    #
-    #   Example:
-    #
-    #   Consider the following local z(.yml) config:
-    #
-    #       sync:
-    #            mode: symlink
-    #            deploymentPath: /home/rik/tmpdeploy/deployment
-    #            publicPath: /home/rik/tmpdeploy/public_html
-    #            shared:
-    #                - app/config/config_local.yml
-    #                - web/media
-    #
-    #   Result:
-    #
-    #       ~/deployment/releases/20160812145925
-    #                               ^          /app/config/config_local.yml
-    #                               |          /web/media     <--       ^
-    #       ~/deployment/current ----  <--                       |      |
-    #       ~/deployment/shared          |                       |      |
-    #                           /app/config/config_local.yml ----|------|
-    #                           /web/media ----------------------|
-    #       ~/public_html ---------------|
-    #
-    #
-    _sync.symlink:
         args:
-            deploymentPath: ?sync.deploymentPath
-            targetPath: ? sh("date +%Y%m%d%H%M%S| awk '{printf $0}'")
-            publicPath: ? sync.publicPath
             simulate: ? false
-            shared: ? sync.shared
-            keep: ? sync.keep
-        do:
-            # Make sure releases path exists
-            - @(sh ssh(target_env)) if [ ! -d "$(deploymentPath)/releases" ]; then mkdir $(deploymentPath)/releases ; fi
-            - @(sh ssh(target_env)) if [ ! -d "$(deploymentPath)/current" ]; then mkdir $(deploymentPath)/current ; fi
-            - @(sh ssh(target_env)) if [ ! -d "$(deploymentPath)/shared" ]; then mkdir $(deploymentPath)/shared ; fi
-            - @(sh ssh(target_env)) if [ ! -e "$(publicPath)" ]; then ln -s $(deploymentPath)/current $(publicPath); fi
-
-            # Create and sync to the targetPath
-            - @(sh ssh(target_env)) if [ ! -e "$(deploymentPath)/releases/$(targetPath)" ]; then mkdir $(deploymentPath)/releases/$(targetPath);  fi
-            - |
-                rsync \
-                    $(simulate ? "--dry-run" : "") \
-                    $(sync.options) $(sync.backup ? sprintf("--backup --backup-dir=%s",sync.backup_folder)) \
-                        $(sync.exclude_file ? sprintf("--exclude-from=%s/%s", tasks.build, sync.exclude_file)) \
-                        -v \
-                    $(tasks.build)/ $(envs[target_env].ssh):$(deploymentPath)/releases/$(targetPath);
-
-            # Remove old current link, using ln -sf didn't seem to work
-            - @(sh ssh(target_env)) if [ -e "$(deploymentPath)/current" ]; then rm -Rf $(deploymentPath)/current ; fi
-
-            # Make sure 'current' in the deploymentPath is set to the latest version
-            - @(sh ssh(target_env)) ln -s $(deploymentPath)/releases/$(targetPath)/ $(deploymentPath)/current
-
-            # Make all shared files/folders available
-            - |
-                @(for share in shared)
-                    if [ -d "$(deploymentPath)/current/$(share)" ]; then rm -Rf $(deploymentPath)/current/$(share); fi
-                    ln -s $(deploymentPath)/shared/$(share) $(deploymentPath)/current/$(share)
-
-            # Removing other releases if keep is met.
-            - |
-                @(sh ssh(target_env))
-                cd $(deploymentPath)/releases;
-                RELEASECOUNT=`ls | sort -r | awk 'NR>1 {print $1}' | wc -l`;
-                if [ $RELEASECOUNT -ge $(keep) ]; then ls | sort -nr | awk 'NR>$(keep)' | xargs rm -rf; fi
-
-
-    _sync.classic:
+            install_path: ?envs[target_env].root
         do: |
             rsync \
                 $(simulate ? "--dry-run" : "") \
                 $(sync.options) $(sync.backup ? sprintf("--backup --backup-dir=%s",sync.backup_folder)) \
                     $(sync.exclude_file ? sprintf("--exclude-from=%s/%s", tasks.build, sync.exclude_file)) \
                     -v \
-                $(tasks.build)/ $(envs[target_env].ssh):$(envs[target_env].root) \
+                $(tasks.build)/ $(envs[target_env].ssh):$(install_path) \
             ;
-
 
     # Synchronize the build dir to the remote environment
     _sync.simulate:
