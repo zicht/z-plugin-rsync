@@ -5,4 +5,4 @@ This provides a means of "transportation" for deploying your code to a remote. T
 See the documentation for the `deploy` plugin for a more detailed instruction on how to use this: https://github.com/zicht/z-plugin-deploy
 
 # Maintainer(s)
-* Gerard van Helden <gerard@zicht.nl>
+* Oskar van Velden <oskar@zicht.nl>
