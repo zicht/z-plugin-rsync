@@ -21,7 +21,7 @@ tasks:
                 $(sync.options) $(sync.backup ? sprintf("--backup --backup-dir=%s",sync.backup_folder)) \
                     $(sync.exclude_file ? sprintf("--exclude-from=%s/%s", tasks.build, sync.exclude_file)) \
                     -v \
-                $(tasks.build)/ $(envs[target_env].ssh):$(envs[target_env].root) \
+                $(tasks.build)/ -e 'ssh -p $(envs[target_env].ssh_port)' $(envs[target_env].ssh):$(envs[target_env].root) \
             ;
 
     # Synchronize the build dir to the remote environment
