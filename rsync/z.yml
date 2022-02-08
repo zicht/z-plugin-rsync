@@ -27,4 +27,4 @@ tasks:
     # Synchronize the build dir to the remote environment
     _sync.simulate:
         args: { simulate: true }
-        do: @_sync.sync
+        do: '@_sync.sync'
